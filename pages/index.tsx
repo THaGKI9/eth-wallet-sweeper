@@ -3,12 +3,14 @@ import Head from 'next/head';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { init, useConnectWallet, useSetChain } from '@web3-onboard/react';
 import injectedModule from '@web3-onboard/injected-wallets';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import ledgerModule from '@web3-onboard/ledger';
 import walletConnectModule from '@web3-onboard/walletconnect';
 import walletLinkModule from '@web3-onboard/walletlink';
 import { BigNumber, ethers } from 'ethers';
 import { Container, Text, Button, Input, Row, Spacer, Radio, useInput, Grid } from '@nextui-org/react';
 import moment from 'moment';
+import { faEthereum } from '@fortawesome/free-brands-svg-icons';
 
 init({
   wallets: [injectedModule(), ledgerModule(), walletConnectModule(), walletLinkModule()],
@@ -152,12 +154,12 @@ const Home: NextPage = () => {
       </Head>
       <Container fluid css={{ paddingTop: '5rem', paddingBottom: '5rem' }}>
         <Row align="baseline">
-          <Text h1 css={{ textGradient: '45deg, $blue500 -20%, $pink500 50%' }}>
-            Ethereum Wallet Sweeper
-          </Text>
-          <Text span css={{ paddingLeft: '1rem' }}>
-            (Version: {version})
-          </Text>
+          <div>
+            <Text h1 css={{ textGradient: '45deg, $blue500 -20%, $pink500 50%' }}>
+              <FontAwesomeIcon icon={faEthereum} height="0.75em" /> Wallet Sweeper
+            </Text>
+            <Text>Version: {version}</Text>
+          </div>
         </Row>
         <Spacer y={0.2} />
 
@@ -173,106 +175,135 @@ const Home: NextPage = () => {
           <>
             <Row>
               <div>
-                <Text>Connected: {wallet.accounts[0]?.address}</Text>
-                <Text>Chain: {connectedChain ? Number.parseInt(connectedChain.id, 16) : ''}</Text>
+                <Text blockquote>
+                  Connected: {wallet.accounts[0]?.address}
+                  <br />
+                  Chain: {connectedChain ? Number.parseInt(connectedChain.id, 16) : ''}
+                </Text>
               </div>
             </Row>
 
-            <Spacer y={1.5} />
+            <Spacer y={1} />
 
-            <Row>
-              <Text h2>Setting</Text>
-            </Row>
-            <Row>
-              <Input
-                {...inputRecipientAddress.bindings}
-                label="Recipient Address"
-                width="42ch"
-                status={
-                  !inputRecipientAddress.value || ethers.utils.isAddress(inputRecipientAddress.value)
-                    ? 'default'
-                    : 'error'
-                }
-              />
-            </Row>
-            <Spacer y={0.5} />
-
-            <Row>
-              <Radio.Group initialValue={'auto-gas'} onChange={(e) => setUseCustomGasPrice(e === 'custom-gas')}>
-                <Radio size="sm" value="auto-gas">
-                  Auto Gas Price
-                  <Spacer x={1} />
+            {currentWalletBalance?.isZero() ? (
+              <>
+                <Text h3>This wallet is empty!</Text>
+              </>
+            ) : (
+              <>
+                <Row>
+                  <Text h2>Setting</Text>
+                </Row>
+                <Row>
                   <Input
-                    readOnly
-                    disabled={useCustomGasPrice}
-                    labelRight="gwei"
-                    value={currentGasPrice ? `${ethers.utils.formatUnits(currentGasPrice, 'gwei')}` : 'N/A'}
+                    {...inputRecipientAddress.bindings}
+                    label="Recipient Address"
+                    width="42ch"
+                    status={
+                      !inputRecipientAddress.value || ethers.utils.isAddress(inputRecipientAddress.value)
+                        ? 'default'
+                        : 'error'
+                    }
                   />
-                </Radio>
-                <Radio size="sm" value="custom-gas">
-                  Custom Gas Price
-                  <Spacer x={1} />
-                  <Input
-                    {...inputGasPrice.bindings}
-                    status={gasPrice && gasFee?.lte(currentWalletBalance || gasPrice) ? 'default' : 'error'}
-                    labelRight="gwei"
-                    disabled={!useCustomGasPrice}
-                  />
-                </Radio>
-              </Radio.Group>
-            </Row>
+                </Row>
+                <Spacer y={0.5} />
 
-            <Spacer y={0.5} />
-            <Row>
-              <Text h2> Calculation</Text>
-            </Row>
-            <Row>
-              <Container fluid>
-                <Grid.Container>
-                  <Grid xs={1}>Balance:</Grid>
-                  <Grid xs>{currentWalletBalance ? `${ethers.utils.formatEther(currentWalletBalance)}Ξ` : 'N/A'}</Grid>
-                </Grid.Container>
-                <Grid.Container>
-                  <Grid xs={1}>Gas Usage:</Grid>
-                  <Grid xs>21000</Grid>
-                </Grid.Container>
-                <Grid.Container>
-                  <Grid xs>----------------------</Grid>
-                </Grid.Container>
-                <Grid.Container>
-                  <Grid xs={1}>Gas Fee:</Grid>
-                  <Grid xs>{gasFee ? `${ethers.utils.formatEther(gasFee)}Ξ` : 'N/A'}</Grid>
-                </Grid.Container>
+                <Row>
+                  <Radio.Group initialValue={'auto-gas'} onChange={(e) => setUseCustomGasPrice(e === 'custom-gas')}>
+                    <Radio size="sm" value="auto-gas">
+                      Auto Gas Price
+                      <Spacer x={1} />
+                      <Input
+                        readOnly
+                        disabled={useCustomGasPrice}
+                        labelRight="gwei"
+                        value={currentGasPrice ? `${ethers.utils.formatUnits(currentGasPrice, 'gwei')}` : 'N/A'}
+                      />
+                    </Radio>
+                    <Radio size="sm" value="custom-gas">
+                      Custom Gas Price
+                      <Spacer x={1} />
+                      <Input
+                        {...inputGasPrice.bindings}
+                        status={gasPrice && gasFee?.lte(currentWalletBalance || gasPrice) ? 'default' : 'error'}
+                        labelRight="gwei"
+                        disabled={!useCustomGasPrice}
+                      />
+                    </Radio>
+                  </Radio.Group>
+                </Row>
 
-                <Grid.Container>
-                  <Grid xs={1}>Transfer:</Grid>
-                  <Grid xs>
-                    {valueToTransfer && gasFee && !gasFee.isNegative() && !valueToTransfer.isNegative()
-                      ? `${ethers.utils.formatEther(valueToTransfer)}Ξ`
-                      : 'N/A'}
-                  </Grid>
-                </Grid.Container>
-              </Container>
-            </Row>
+                <Spacer y={0.5} />
+                <Row>
+                  <Text h2> Calculation</Text>
+                </Row>
+                <Row>
+                  <Container fluid>
+                    <Grid.Container>
+                      <Grid xs={3} sm={1}>
+                        Balance:
+                      </Grid>
+                      <Grid xs sm>
+                        {currentWalletBalance ? `${ethers.utils.formatEther(currentWalletBalance)}Ξ` : 'N/A'}
+                      </Grid>
+                    </Grid.Container>
+                    <Grid.Container>
+                      <Grid xs={3} sm={1}>
+                        Gas Usage:
+                      </Grid>
+                      <Grid xs sm>
+                        21000
+                      </Grid>
+                    </Grid.Container>
+                    <Grid.Container>
+                      <Grid xs sm>
+                        ----------------------
+                      </Grid>
+                    </Grid.Container>
+                    <Grid.Container>
+                      <Grid xs={3} sm={1}>
+                        Gas Fee:
+                      </Grid>
+                      <Grid xs sm>
+                        {gasFee ? `${ethers.utils.formatEther(gasFee)}Ξ` : 'N/A'}
+                      </Grid>
+                    </Grid.Container>
 
-            <Spacer y={0.5} />
-            <Row>
-              <Button
-                color="gradient"
-                auto
-                disabled={
-                  executing ||
-                  !(
-                    valueToTransfer &&
-                    !valueToTransfer.isNegative() &&
-                    ethers.utils.isAddress(inputRecipientAddress.value)
-                  )
-                }
-                onClick={() => executeTransfer()}
-              >
-                {executing ? 'Sweep...' : 'Sweep!'}
-              </Button>
-            </Row>
+                    <Grid.Container>
+                      <Grid xs={3} sm={1}>
+                        Transfer:
+                      </Grid>
+                      <Grid xs sm>
+                        {valueToTransfer && gasFee && !gasFee.isNegative() && !valueToTransfer.isNegative()
+                          ? `${ethers.utils.formatEther(valueToTransfer)}Ξ`
+                          : 'N/A'}
+                      </Grid>
+                    </Grid.Container>
+                  </Container>
+                </Row>
+
+                <Spacer y={0.5} />
+                <Row>
+                  <Button
+                    color="gradient"
+                    auto
+                    disabled={
+                      executing ||
+                      !(
+                        currentWalletBalance &&
+                        !currentWalletBalance.isNegative() &&
+                        valueToTransfer &&
+                        !valueToTransfer.isNegative() &&
+                        ethers.utils.isAddress(inputRecipientAddress.value)
+                      )
+                    }
+                    onClick={() => executeTransfer()}
+                  >
+                    {executing ? 'Sweep...' : 'Sweep'}
+                  </Button>
+                </Row>
+              </>
+            )}
           </>
         )}
       </Container>
