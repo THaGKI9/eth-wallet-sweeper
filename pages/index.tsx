@@ -112,12 +112,12 @@ const Home: NextPage = () => {
         type: 'error',
         message: 'Fail to send transaction. Error: ' + error,
       });
-      return;
-    } finally {
+
       setExecuting(false);
+      return;
     }
 
-    // const txLink = chainId in supportedChains ? `${supportedChains[chainId].browser}tx/${tx.hash}` : '';
+    // const txLink = chainId in supportedChains ? `${supportedChains[chainId].browser}/tx/${tx.hash}` : '';
 
     const txSentNotification = notify?.notification({
       type: 'pending',
@@ -141,8 +141,11 @@ const Home: NextPage = () => {
       });
     }
 
+    setExecuting(false);
+
     return () => {
       if (txSentNotification) txSentNotification.dismiss();
+      setExecuting(false);
     };
   }, [executing, gasPrice, inputRecipientAddress.value, notify, valueToTransfer, wallet?.accounts, web3Provider]);
 
