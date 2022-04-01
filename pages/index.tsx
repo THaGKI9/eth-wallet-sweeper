@@ -11,44 +11,30 @@ import { BigNumber, ethers } from 'ethers';
 import { Container, Text, Button, Input, Row, Spacer, Radio, useInput, Grid } from '@nextui-org/react';
 import moment from 'moment';
 import { faEthereum } from '@fortawesome/free-brands-svg-icons';
-
-init({
-  wallets: [injectedModule(), ledgerModule(), walletConnectModule(), walletLinkModule()],
-  chains: [
-    {
-      id: '0x1',
-      token: 'ETH',
-      label: 'Ethereum Mainnet',
-      rpcUrl: 'https://mainnet.infura.io/v3/b0ddbf6d18524aaf84f91b46fba9459f',
-    },
-    {
-      id: '0x3',
-      token: 'tROP',
-      label: 'Ethereum Ropsten Testnet',
-      rpcUrl: 'https://ropsten.infura.io/v3/b0ddbf6d18524aaf84f91b46fba9459f',
-    },
-    {
-      id: '0x4',
-      token: 'rETH',
-      label: 'Ethereum Rinkeby Testnet',
-      rpcUrl: 'https://rinkeby.infura.io/v3/b0ddbf6d18524aaf84f91b46fba9459f',
-    },
-    {
-      id: '0x89',
-      token: 'MATIC',
-      label: 'Matic Mainnet',
-      rpcUrl: 'https://matic-mainnet.chainstacklabs.com',
-    },
-  ],
-});
+import Notify from 'bnc-notify';
+import { TransactionResponse } from '@ethersproject/abstract-provider';
+import { supportedChains } from '../constants/chain';
 
 let setCustomGasPriceByOnChainData = false;
 
+init({
+  wallets: [injectedModule(), ledgerModule(), walletConnectModule(), walletLinkModule()],
+  chains: Object.values(supportedChains).map((c) => ({
+    id: c.id,
+    token: c.token,
+    label: c.label,
+    rpcUrl: c.rpcUrl,
+  })),
+});
+
 const Home: NextPage = () => {
   const [{ wallet, connecting }, connect] = useConnectWallet();
+  const [notify, setNotify] = useState<ReturnType<typeof Notify>>();
+
   const [{ connectedChain }] = useSetChain();
   const version = `${(process.env.VERSION ?? 'dirty').substring(0, 8)}, ${moment().format('yyyy-MM-DD')}`;
 
+  const chainId = useMemo(() => Number.parseInt(connectedChain?.id || '1', 16), [connectedChain]);
   const [currentWalletBalance, setCurrentWalletBalance] = useState<BigNumber>();
   const [currentGasPrice, setCurrentGasPrice] = useState<BigNumber>();
   const [useCustomGasPrice, setUseCustomGasPrice] = useState(false);
@@ -66,6 +52,15 @@ const Home: NextPage = () => {
 
     return new ethers.providers.Web3Provider(onboardProvider as any);
   }, [wallet]);
+
+  useEffect(() => {
+    setNotify(
+      Notify({
+        mobilePosition: 'bottom',
+        desktopPosition: 'topLeft',
+      }),
+    );
+  }, []);
 
   const updateCurrentWalletBalance = useCallback(async () => {
     let walletAddress = wallet?.accounts[0].address;
@@ -90,21 +85,66 @@ const Home: NextPage = () => {
     if (executing) {
       return;
     }
+
+    const signer = web3Provider?.getSigner(wallet?.accounts[0].address);
+    if (!signer) {
+      notify?.notification({
+        type: 'error',
+        message: 'There is no valid signer',
+      });
+      return;
+    }
+
     setExecuting(true);
 
+    let tx: TransactionResponse;
+
     try {
-      const signer = web3Provider?.getSigner(wallet?.accounts[0].address);
-      await signer?.sendTransaction({
+      tx = await signer!.sendTransaction({
         to: inputRecipientAddress.value,
         value: valueToTransfer,
         gasLimit: 21000,
         maxFeePerGas: gasPrice,
         maxPriorityFeePerGas: gasPrice,
       });
+    } catch (error) {
+      notify?.notification({
+        type: 'error',
+        message: 'Fail to send transaction. Error: ' + error,
+      });
+      return;
     } finally {
       setExecuting(false);
     }
-  }, [executing, gasPrice, inputRecipientAddress.value, valueToTransfer, wallet?.accounts, web3Provider]);
+
+    // const txLink = chainId in supportedChains ? `${supportedChains[chainId].browser}tx/${tx.hash}` : '';
+
+    const txSentNotification = notify?.notification({
+      type: 'pending',
+      message: 'Transaction sent',
+    });
+
+    const txRecipient = await tx.wait();
+
+    if (txRecipient.status === 1) {
+      txSentNotification?.update({
+        type: 'success',
+        message: 'Successfully swept!',
+        autoDismiss: 5000,
+      });
+    } else {
+      txSentNotification?.update({
+        type: 'error',
+        message: 'Transaction failed',
+        autoDismiss: 5000,
+        // link: txLink,
+      });
+    }
+
+    return () => {
+      if (txSentNotification) txSentNotification.dismiss();
+    };
+  }, [executing, gasPrice, inputRecipientAddress.value, notify, valueToTransfer, wallet?.accounts, web3Provider]);
 
   useEffect(() => {
     if (!web3Provider) return;
@@ -178,7 +218,8 @@ const Home: NextPage = () => {
                 <Text blockquote>
                   Connected: {wallet.accounts[0]?.address}
                   <br />
-                  Chain: {connectedChain ? Number.parseInt(connectedChain.id, 16) : ''}
+                  Chain: {chainId}
+                  {chainId in supportedChains ? ` - ${supportedChains[chainId].label}` : ''}
                 </Text>
               </div>
             </Row>

@@ -20,6 +20,7 @@
     "@web3-onboard/react": "^2.0.2",
     "@web3-onboard/walletconnect": "^2.0.0",
     "@web3-onboard/walletlink": "^2.0.0",
+    "bnc-notify": "^1.9.4",
     "ethers": "^5.5.4",
     "moment": "^2.29.1",
     "next": "12.1.0",
