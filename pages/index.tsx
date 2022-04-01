@@ -59,9 +59,10 @@ const Home: NextPage = () => {
       Notify({
         mobilePosition: 'bottom',
         desktopPosition: 'topLeft',
+        darkMode: theme.isDark,
       }),
     );
-  }, []);
+  }, [theme.isDark]);
 
   const updateCurrentWalletBalance = useCallback(async () => {
     let walletAddress = wallet?.accounts[0].address;
@@ -109,9 +110,11 @@ const Home: NextPage = () => {
         maxPriorityFeePerGas: gasPrice,
       });
     } catch (error) {
+      let err = error as any;
       notify?.notification({
         type: 'error',
-        message: 'Fail to send transaction. Error: ' + error,
+        message: 'Fail to send transaction.<br />Code: ' + err.code + '<br />Message: ' + err.message,
+        autoDismiss: 5 * 1000,
       });
 
       setExecuting(false);
