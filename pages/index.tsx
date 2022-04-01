@@ -1,24 +1,36 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { NextPage } from 'next';
 import Head from 'next/head';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { init, useConnectWallet, useSetChain } from '@web3-onboard/react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import injectedModule from '@web3-onboard/injected-wallets';
-import ledgerModule from '@web3-onboard/ledger';
-import walletConnectModule from '@web3-onboard/walletconnect';
-import walletLinkModule from '@web3-onboard/walletlink';
 import { BigNumber, ethers } from 'ethers';
 import { Container, Text, Button, Input, Row, Spacer, Radio, useInput, Grid, useTheme } from '@nextui-org/react';
 import moment from 'moment';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEthereum } from '@fortawesome/free-brands-svg-icons';
 import Notify from 'bnc-notify';
 import { TransactionResponse } from '@ethersproject/abstract-provider';
 import { supportedChains } from '../constants/chain';
 
+import { init, useConnectWallet, useSetChain } from '@web3-onboard/react';
+import gnosisModule from '@web3-onboard/gnosis';
+import injectedModule from '@web3-onboard/injected-wallets';
+import keepKeyModule from '@web3-onboard/gnosis';
+import ledgerModule from '@web3-onboard/ledger';
+import torusModule from '@web3-onboard/torus';
+import walletConnectModule from '@web3-onboard/walletconnect';
+import walletLinkModule from '@web3-onboard/walletlink';
+
 let setCustomGasPriceByOnChainData = false;
 
 init({
-  wallets: [injectedModule(), ledgerModule(), walletConnectModule(), walletLinkModule()],
+  wallets: [
+    injectedModule(),
+    ledgerModule(),
+    walletConnectModule(),
+    walletLinkModule(),
+    torusModule(),
+    gnosisModule(),
+    keepKeyModule(),
+  ],
   chains: Object.values(supportedChains).map((c) => ({
     id: c.id,
     token: c.token,
