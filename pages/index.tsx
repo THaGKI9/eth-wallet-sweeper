@@ -2,13 +2,13 @@ import type { NextPage } from 'next';
 import Head from 'next/head';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { init, useConnectWallet, useSetChain } from '@web3-onboard/react';
-import injectedModule from '@web3-onboard/injected-wallets';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import injectedModule from '@web3-onboard/injected-wallets';
 import ledgerModule from '@web3-onboard/ledger';
 import walletConnectModule from '@web3-onboard/walletconnect';
 import walletLinkModule from '@web3-onboard/walletlink';
 import { BigNumber, ethers } from 'ethers';
-import { Container, Text, Button, Input, Row, Spacer, Radio, useInput, Grid } from '@nextui-org/react';
+import { Container, Text, Button, Input, Row, Spacer, Radio, useInput, Grid, useTheme } from '@nextui-org/react';
 import moment from 'moment';
 import { faEthereum } from '@fortawesome/free-brands-svg-icons';
 import Notify from 'bnc-notify';
@@ -28,6 +28,7 @@ init({
 });
 
 const Home: NextPage = () => {
+  const theme = useTheme();
   const [{ wallet, connecting }, connect] = useConnectWallet();
   const [notify, setNotify] = useState<ReturnType<typeof Notify>>();
 
@@ -248,6 +249,9 @@ const Home: NextPage = () => {
                         ? 'default'
                         : 'error'
                     }
+                    css={{
+                      fontFamily: theme.theme?.fonts.mono,
+                    }}
                   />
                 </Row>
                 <Spacer y={0.5} />
@@ -281,14 +285,14 @@ const Home: NextPage = () => {
                 <Row>
                   <Text h2> Calculation</Text>
                 </Row>
-                <Row>
+                <Row css={{ fontFamily: theme.theme?.fonts.mono }}>
                   <Container fluid>
                     <Grid.Container>
                       <Grid xs={3} sm={1}>
                         Balance:
                       </Grid>
                       <Grid xs sm>
-                        {currentWalletBalance ? `${ethers.utils.formatEther(currentWalletBalance)}Ξ` : 'N/A'}
+                        {currentWalletBalance ? `${ethers.utils.formatEther(currentWalletBalance)} ether` : 'N/A'}
                       </Grid>
                     </Grid.Container>
                     <Grid.Container>
@@ -309,7 +313,7 @@ const Home: NextPage = () => {
                         Gas Fee:
                       </Grid>
                       <Grid xs sm>
-                        {gasFee ? `${ethers.utils.formatEther(gasFee)}Ξ` : 'N/A'}
+                        {gasFee ? `${ethers.utils.formatEther(gasFee)} ether` : 'N/A'}
                       </Grid>
                     </Grid.Container>
 
@@ -319,7 +323,7 @@ const Home: NextPage = () => {
                       </Grid>
                       <Grid xs sm>
                         {valueToTransfer && gasFee && !gasFee.isNegative() && !valueToTransfer.isNegative()
-                          ? `${ethers.utils.formatEther(valueToTransfer)}Ξ`
+                          ? `${ethers.utils.formatEther(valueToTransfer)} ether`
                           : 'N/A'}
                       </Grid>
                     </Grid.Container>
